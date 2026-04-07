@@ -54,10 +54,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install Python client
+      - name: Install Python client and test deps
         run: |
           cd python
-          pip install -e ".[dev]" 2>/dev/null || pip install -e .
+          pip install -e .
+          pip install pytest
 
       - name: Run Python tests
         run: |

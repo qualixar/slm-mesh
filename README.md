@@ -1,4 +1,4 @@
-# SLM Mesh
+# SLM Mesh (SuperLocalMemory Mesh)
 
 **Peer-to-peer communication for AI coding agents.**
 
@@ -7,7 +7,9 @@
 [![Tests: 480 passing](https://img.shields.io/badge/tests-480_passing-brightgreen)]()
 [![Coverage: 100%](https://img.shields.io/badge/coverage-100%25-brightgreen)]()
 
-> Part of the Qualixar research initiative by Varun Pratap Bhardwaj.
+> Part of the [Qualixar](https://qualixar.com) research initiative by Varun Pratap Bhardwaj.
+>
+> **SLM** stands for [SuperLocalMemory](https://superlocalmemory.com) — the local-first AI memory system. SLM Mesh is the communication layer that wires AI agent sessions together.
 
 ---
 
@@ -312,6 +314,20 @@ We use TDD and require 100% line coverage for all changes.
 ## License
 
 [MIT](LICENSE) — Copyright 2026 Varun Pratap Bhardwaj.
+
+## The Qualixar Ecosystem
+
+[Qualixar](https://qualixar.com) is a research initiative building the operating system for AI agents:
+
+| Product | Role | Description |
+|---------|------|-------------|
+| [SuperLocalMemory](https://superlocalmemory.com) | **The Brain** | Local-first AI memory — persistent semantic memory for coding agents |
+| **SLM Mesh** | **The Nervous System** | Peer-to-peer communication — carries signals between agent sessions |
+| [Qualixar OS](https://qualixar.com) | **The Body** | Agent orchestration — the full operating system for AI agent teams |
+
+Each product works independently. Together, they form a complete agent operating system.
+
+SLM Mesh can optionally bridge messages to [SuperLocalMemory](https://superlocalmemory.com) for cross-session recall — but it works perfectly standalone with zero dependencies on other Qualixar products.
 
 ---
 
