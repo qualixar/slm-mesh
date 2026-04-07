@@ -115,13 +115,13 @@ class TestStatus(unittest.TestCase):
         raw = {
             "status": "running",
             "version": "1.0.0",
-            "uptime": 500.0,
+            "uptime": 500,
             "pid": 12345,
             "port": 7899,
-            "peers": 3,
-            "messages": 42,
-            "locks": 1,
-            "events": 100,
+            "peers": {"active": 3, "stale": 0, "total": 3},
+            "messages": {"total": 42, "undelivered": 2},
+            "locks": {"active": 1},
+            "events": {"total": 100},
         }
         mock_urlopen.return_value = _mock_response(raw)
 
@@ -130,8 +130,8 @@ class TestStatus(unittest.TestCase):
 
         self.assertIsInstance(result, BrokerStatus)
         self.assertEqual(result.status, "running")
-        self.assertEqual(result.peers, 3)
-        self.assertEqual(result.messages, 42)
+        self.assertEqual(result.peers.active, 3)
+        self.assertEqual(result.messages.total, 42)
         self.assertEqual(result.pid, 12345)
 
 
@@ -189,12 +189,13 @@ class TestMessaging(unittest.TestCase):
             "messages": [
                 {
                     "id": "m1",
-                    "from": "agent-a",
-                    "to": "agent-b",
+                    "fromPeer": "agent-a",
+                    "toPeer": "agent-b",
                     "payload": "hi",
                     "type": "text",
-                    "timestamp": "2026-04-07T10:00:00Z",
-                    "read": False,
+                    "createdAt": "2026-04-07T10:00:00Z",
+                    "readAt": None,
+                    "delivered": 1,
                 },
             ],
         }
@@ -340,9 +341,9 @@ class TestEvents(unittest.TestCase):
                 {
                     "id": "e1",
                     "type": "message",
-                    "data": {"messageId": "m1"},
-                    "timestamp": "2026-04-07T10:00:00Z",
-                    "peerId": "a",
+                    "payload": '{"messageId": "m1"}',
+                    "emittedBy": "a",
+                    "createdAt": "2026-04-07T10:00:00Z",
                 },
             ],
         }
@@ -354,7 +355,7 @@ class TestEvents(unittest.TestCase):
         self.assertEqual(len(events), 1)
         self.assertIsInstance(events[0], MeshEvent)
         self.assertEqual(events[0].event_type, "message")
-        self.assertEqual(events[0].data["messageId"], "m1")
+        self.assertIn("messageId", events[0].payload)
 
 
 class TestErrorHandling(unittest.TestCase):
@@ -404,14 +405,14 @@ class TestDataclasses(unittest.TestCase):
             msg.payload = "changed"  # type: ignore[misc]
 
     def test_lock_is_frozen(self) -> None:
-        lock = Lock(file_path="f.ts", peer_id="p1")
+        lock = Lock(file_path="f.ts", locked_by="p1")
         with self.assertRaises(AttributeError):
-            lock.peer_id = "changed"  # type: ignore[misc]
+            lock.locked_by = "changed"  # type: ignore[misc]
 
     def test_broker_status_from_dict(self) -> None:
-        raw = {"status": "ok", "version": "1.0.0", "uptime": 10.0, "peers": 5}
+        raw = {"status": "ok", "version": "1.0.0", "uptime": 10, "peers": {"active": 5, "stale": 0, "total": 5}}
         bs = BrokerStatus.from_dict(raw)
-        self.assertEqual(bs.peers, 5)
+        self.assertEqual(bs.peers.active, 5)
         self.assertEqual(bs.version, "1.0.0")
 
 
