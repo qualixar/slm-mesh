@@ -40,7 +40,7 @@ jobs:
         run: npm test
 
       - name: Run tests with coverage
-        run: npm run test:coverage
+        run: npx vitest run --coverage --coverage.thresholds.lines=99 --coverage.thresholds.statements=99 --coverage.thresholds.functions=99 --coverage.thresholds.branches=90
 
   test-python:
     name: Test Python Client
