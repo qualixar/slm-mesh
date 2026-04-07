@@ -1,0 +1,30 @@
+# Only publish what users need
+# Whitelist approach via package.json "files" field is preferred,
+# but .npmignore provides defense-in-depth
+
+# Source (users get compiled dist/)
+src/
+tests/
+python/
+
+# Config
+tsconfig.json
+tsup.config.ts
+vitest.config.ts
+.github/
+
+# Internal
+.backup/
+.gitignore
+mydatabase.db
+*.db
+
+# Environment & secrets
+.env
+.env.*
+.npmrc
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store

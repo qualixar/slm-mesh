@@ -1,0 +1,21 @@
+[project]
+name = "slm-mesh"
+version = "1.0.0"
+description = "Python client for SLM Mesh — peer-to-peer communication for AI coding agents."
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+authors = [{ name = "Varun Pratap Bhardwaj" }]
+keywords = ["mcp", "ai-agents", "peer-to-peer", "slm-mesh", "superlocalmemory"]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/qualixar/slm-mesh"
+Repository = "https://github.com/qualixar/slm-mesh"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/slm_mesh"]

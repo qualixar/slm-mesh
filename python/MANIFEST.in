@@ -1,0 +1,6 @@
+include README.md
+include LICENSE
+recursive-include src/slm_mesh *.py
+exclude .backup
+exclude research
+exclude tests

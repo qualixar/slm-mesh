@@ -1,0 +1,50 @@
+# Backup & research — all intel, LLDs, sessions (never public)
+.backup/
+research/
+
+# Dependencies
+node_modules/
+.venv/
+
+# Build output
+dist/
+*.tgz
+
+# Runtime & test artifacts
+*.pid
+*.db
+*.db-wal
+*.db-shm
+mydatabase.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment & secrets
+.env
+.env.local
+*.env
+.npmrc
+.claude-secrets.env
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Linter caches
+.ruff_cache/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+build/
+*.whl
