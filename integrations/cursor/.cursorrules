@@ -1,0 +1,30 @@
+# SLM Mesh — Cursor Rules
+
+## Multi-Session Coordination
+
+You have access to SLM Mesh MCP tools for communicating with other AI agent sessions on this machine.
+
+### Before editing shared files:
+1. Call `mesh_peers` to see who else is active
+2. Call `mesh_lock` with action "query" to check if the file is locked
+3. If unlocked, call `mesh_lock` with action "lock" before editing
+4. When done, call `mesh_lock` with action "unlock"
+
+### At the start of each session:
+1. Call `mesh_summary` to announce what you're working on
+2. Call `mesh_inbox` to check for messages from other sessions
+3. Call `mesh_peers` to see who else is active
+
+### When making significant changes:
+1. Call `mesh_send` with to "all" to broadcast what you changed
+2. Call `mesh_state` to update shared state (e.g., db_version, api_version)
+
+### Available tools:
+- mesh_peers — Discover other sessions (scope: machine, directory, repo)
+- mesh_send — Send direct or broadcast messages
+- mesh_inbox — Read messages from other sessions
+- mesh_state — Read/write shared key-value state
+- mesh_lock — Lock/unlock/query file locks
+- mesh_events — Subscribe to mesh events
+- mesh_summary — Set your work summary
+- mesh_status — Check broker health
