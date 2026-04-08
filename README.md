@@ -15,8 +15,9 @@
 
 **Your AI sessions can finally talk to each other.**
 
-<!-- TODO: Add demo GIF here -->
-<!-- ![Demo](docs/assets/demo.gif) -->
+<video src="https://github.com/qualixar/slm-mesh/raw/main/docs/assets/slm-mesh-demo.mp4" width="100%" autoplay loop muted playsinline></video>
+
+> *3 AI agents across VS Code, iTerm2, and Antigravity — discovering each other, sharing state, and coordinating in real-time.*
 
 ---
 
