@@ -113,7 +113,7 @@ export function registerTools(mcp: McpServer, state: ServerState): void {
       title: 'Set Work Summary',
       description: 'Set a summary of what you are currently working on. This is visible to other agents on the mesh so they know your context.',
       inputSchema: {
-        summary: z.string().min(1).max(1000)
+        summary: z.string().min(1).max(2500)
           .describe('Brief description of your current work (visible to other agents)'),
       },
     },

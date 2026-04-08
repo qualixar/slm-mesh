@@ -1,6 +1,6 @@
 {
   "name": "slm-mesh",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Peer-to-peer communication for AI coding agents — by Qualixar, powered by SuperLocalMemory",
   "author": "Varun Pratap Bhardwaj",
   "license": "MIT",

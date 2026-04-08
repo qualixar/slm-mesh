@@ -260,7 +260,7 @@ describe('handleSummary', () => {
   it('rejects summary exceeding max length', () => {
     const { handlers } = setup();
     const reg = registerPeer(handlers);
-    const long = 'x'.repeat(1100);
+    const long = 'x'.repeat(2600);
     const r = handlers.handleSummary({ peerId: reg.peerId, summary: long });
     expect(r.ok).toBe(false);
   });
