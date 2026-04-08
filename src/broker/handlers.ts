@@ -26,7 +26,7 @@ import type { PeerRow, MessageRow, StateRow, LockRow, EventRow } from '../types.
 const MAX_PAYLOAD_BYTES = 65_536;
 
 /** SEC-020: Max summary length in characters */
-const MAX_SUMMARY_CHARS = 500;
+const MAX_SUMMARY_CHARS = 1000;
 
 /** SEC-005: Rate limiting — max requests per peer per window */
 const RATE_LIMIT_MAX = 100;
