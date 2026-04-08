@@ -7,6 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import { createServer } from 'node:http';
 import { createProgram, buildAuthHeaders, brokerGet, brokerPost } from '../../../src/cli/cli.js';
+import { VERSION } from '../../../src/config.js';
 
 describe('createProgram', () => {
   it('creates a program with all expected commands', () => {
@@ -34,7 +35,7 @@ describe('createProgram', () => {
   it('has correct version set', () => {
     const program = createProgram();
     expect(program.version()).toBeDefined();
-    expect(program.version()).toContain('1.0.0');
+    expect(program.version()).toContain(VERSION);
   });
 
   it('has correct program name', () => {

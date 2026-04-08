@@ -288,7 +288,7 @@ describe('runCli', () => {
     console.log = (...args: unknown[]) => logOutput.push(args.map(String).join(' '));
     try {
       await runCli(['node', 'slm-mesh', 'version']);
-      expect(logOutput.some(l => l.includes('1.0.0'))).toBe(true);
+      expect(logOutput.some(l => /\d+\.\d+\.\d+/.test(l))).toBe(true);
     } finally {
       console.log = origLog;
     }

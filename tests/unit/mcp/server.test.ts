@@ -30,8 +30,8 @@ import { VERSION, PRODUCT_NAME, BRANDING, createConfig } from '../../../src/conf
 // via manual testing and the broker integration tests.
 
 describe('MCP Server configuration', () => {
-  it('config has correct version', () => {
-    expect(VERSION).toBe('1.0.0');
+  it('config has correct version format', () => {
+    expect(VERSION).toMatch(/^\d+\.\d+\.\d+$/);
   });
 
   it('config has correct product name', () => {
@@ -39,7 +39,7 @@ describe('MCP Server configuration', () => {
   });
 
   it('branding includes version and Qualixar', () => {
-    expect(BRANDING).toContain('1.0.0');
+    expect(BRANDING).toContain(VERSION);
     expect(BRANDING).toContain('Qualixar');
   });
 

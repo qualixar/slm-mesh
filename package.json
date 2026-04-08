@@ -1,6 +1,6 @@
 {
   "name": "slm-mesh",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Peer-to-peer communication for AI coding agents — by Qualixar, powered by SuperLocalMemory",
   "author": "Varun Pratap Bhardwaj",
   "license": "MIT",
@@ -12,6 +12,9 @@
   },
   "files": [
     "dist",
+    "skills",
+    "scripts",
+    "integrations",
     "README.md",
     "LICENSE"
   ],
@@ -23,6 +26,7 @@
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "lint": "tsc --noEmit",
+    "postinstall": "node scripts/postinstall.mjs 2>/dev/null || true",
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
