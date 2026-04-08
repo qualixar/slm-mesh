@@ -38,7 +38,10 @@ npm install -g slm-mesh
 # Add to Claude Code
 claude mcp add --scope user slm-mesh -- npx slm-mesh
 
-# Done. Your sessions can now discover and message each other.
+# Optional: Add slash commands (works in every project)
+mkdir -p ~/.claude/commands
+cp $(npm root -g)/slm-mesh/skills/*.md ~/.claude/commands/
+# Now type /mesh-peers, /mesh-send, /mesh-lock, /mesh-status, /mesh-sync in any session
 ```
 
 Zero config. Zero cloud. Zero dangerous flags. Works with **any** MCP-compatible AI coding agent.
