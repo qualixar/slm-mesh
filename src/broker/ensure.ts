@@ -1,7 +1,7 @@
 /**
  * SLM Mesh — Ensure Broker Running
  * Used by MCP servers and CLI to auto-start the broker if needed.
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * Part of the Qualixar research initiative
  */
 

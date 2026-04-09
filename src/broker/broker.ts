@@ -1,7 +1,7 @@
 /**
  * SLM Mesh — Main Broker Class
  * Orchestrates all components: HTTP server, DB, push, timers, lifecycle.
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * Part of the Qualixar research initiative
  */
 

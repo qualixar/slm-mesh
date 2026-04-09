@@ -1,6 +1,6 @@
 """SLM Mesh -- Python client for peer-to-peer AI agent communication.
 
-Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
 Part of the Qualixar research initiative by Varun Pratap Bhardwaj.
 https://github.com/qualixar/slm-mesh
 """

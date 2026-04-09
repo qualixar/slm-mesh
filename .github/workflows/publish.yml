@@ -1,5 +1,5 @@
 # SLM Mesh — Auto-publish to npm + PyPI on GitHub Release
-# Copyright 2026 Qualixar (Varun Pratap Bhardwaj). MIT License.
+# Copyright 2026 Qualixar (Varun Pratap Bhardwaj). Elastic-2.0.
 
 name: Publish
 

@@ -49,4 +49,4 @@ events = client.events(types=["message", "lock"], limit=10)
 
 ## License
 
-MIT
+Elastic License 2.0

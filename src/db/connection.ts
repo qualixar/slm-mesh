@@ -1,7 +1,7 @@
 /**
  * SLM Mesh — Database Connection Manager
  * Opens, configures, checkpoints, and closes the SQLite database.
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * Part of the Qualixar research initiative
  */
 

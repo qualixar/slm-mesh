@@ -2,7 +2,7 @@
  * SLM Mesh -- MCP Server
  * Exposes 8 tools to AI agents via the Model Context Protocol.
  * Communicates with the broker over HTTP.
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * Part of the Qualixar research initiative
  */
 

@@ -1,6 +1,6 @@
 /**
  * SLM Mesh — NDJSON (Newline-Delimited JSON) framing for UDS communication
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * Part of the Qualixar research initiative
  *
  * NDJSON is a simple framing protocol: each JSON object is separated by '\n'.

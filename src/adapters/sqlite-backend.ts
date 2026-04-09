@@ -1,7 +1,7 @@
 /**
  * SLM Mesh — SQLite BackendAdapter Implementation
  * Extracts all SQL logic into a clean class implementing BackendAdapter.
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * Part of the Qualixar research initiative
  */
 

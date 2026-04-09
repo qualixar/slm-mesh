@@ -1,7 +1,7 @@
 /**
  * SLM Mesh — Migration System
  * Uses PRAGMA user_version for tracking applied migrations.
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * Part of the Qualixar research initiative
  */
 

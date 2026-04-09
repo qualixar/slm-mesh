@@ -1,6 +1,6 @@
 /**
  * SLM Mesh — Logger (stderr only — stdout reserved for MCP stdio)
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * https://github.com/qualixar/slm-mesh
  */
 

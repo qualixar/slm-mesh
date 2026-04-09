@@ -1,7 +1,7 @@
 """SLM Mesh Python client -- thin HTTP wrapper over the Node.js broker API.
 
 Uses only stdlib (urllib.request, json). Zero external dependencies.
-Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
 Part of the Qualixar research initiative
 """
 

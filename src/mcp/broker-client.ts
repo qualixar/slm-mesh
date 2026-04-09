@@ -1,4 +1,4 @@
-// Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+// Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
 /**
  * SLM Mesh -- Broker HTTP Client
  * Simple fetch wrapper for MCP server -> broker communication.

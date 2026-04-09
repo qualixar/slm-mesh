@@ -1,7 +1,7 @@
 /**
  * SLM Mesh — Entry Point
  * Detects CLI mode vs MCP server mode based on process.argv.
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * Part of the Qualixar research initiative | Powered by SuperLocalMemory
  */
 

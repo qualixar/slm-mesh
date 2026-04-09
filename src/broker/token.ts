@@ -1,4 +1,4 @@
-// Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+// Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
 /**
  * SLM Mesh — Bearer Token Management
  * Generates, writes, reads, and removes the broker authentication token.

@@ -1,7 +1,7 @@
 /**
  * SLM Mesh -- Agent Type Detection
  * 3-tier detection: env vars -> process tree -> default
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * Part of the Qualixar research initiative
  */
 

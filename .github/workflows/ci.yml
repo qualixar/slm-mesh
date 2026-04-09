@@ -1,6 +1,6 @@
 # SLM Mesh — CI/CD Pipeline
 # Runs tests, type checks, and publishes to npm + PyPI on release
-# Copyright 2026 Qualixar (Varun Pratap Bhardwaj). MIT License.
+# Copyright 2026 Qualixar (Varun Pratap Bhardwaj). Elastic-2.0.
 
 name: CI
 

@@ -11,7 +11,7 @@
  * - Every operation wrapped in try/catch
  * - Silent exit on any error (don't break npm install)
  *
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  */
 
 import { mkdirSync, copyFileSync, readdirSync, existsSync } from 'node:fs';

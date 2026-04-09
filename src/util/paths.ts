@@ -1,7 +1,7 @@
 /**
  * SLM Mesh — Path utilities
  * Handles UDS path validation (macOS 103 char limit), data dir creation
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * https://github.com/qualixar/slm-mesh
  */
 

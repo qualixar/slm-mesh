@@ -2,7 +2,7 @@
  * SLM Mesh -- Peer UDS Listener
  * Each MCP server opens a UDS listener so the broker can push notifications.
  * Architecture: Peer-as-Server, Broker-as-Client.
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * Part of the Qualixar research initiative
  */
 

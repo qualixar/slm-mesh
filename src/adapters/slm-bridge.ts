@@ -2,7 +2,7 @@
  * SLM Mesh — SLM Memory Bridge
  * Integrates with SuperLocalMemory for persistent context.
  * Gracefully degrades to no-ops when SLM is not installed.
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * Part of the Qualixar research initiative
  */
 

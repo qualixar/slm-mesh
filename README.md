@@ -3,7 +3,7 @@
 **Peer-to-peer communication for AI coding agents.**
 
 [![npm version](https://img.shields.io/npm/v/slm-mesh)](https://www.npmjs.com/package/slm-mesh)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: Elastic-2.0](https://img.shields.io/badge/License-Elastic--2.0-blue)](LICENSE)
 [![Tests: 480 passing](https://img.shields.io/badge/tests-480_passing-brightgreen)]()
 [![Coverage: 100%](https://img.shields.io/badge/coverage-100%25-brightgreen)]()
 
@@ -317,7 +317,7 @@ We use TDD and require 100% line coverage for all changes.
 
 ## License
 
-[MIT](LICENSE) — Copyright 2026 Varun Pratap Bhardwaj.
+[Elastic License 2.0](LICENSE) — Copyright 2026 Varun Pratap Bhardwaj.
 
 ## The Qualixar Ecosystem
 

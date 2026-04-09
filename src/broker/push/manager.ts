@@ -1,6 +1,6 @@
 /**
  * SLM Mesh — PushManager: manages all peer UDS connections
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * Part of the Qualixar research initiative
  *
  * Central registry of PeerConnections. Provides connect, disconnect,

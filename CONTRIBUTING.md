@@ -73,4 +73,4 @@ Run coverage: `npm run test:coverage`
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the MIT License.
+By contributing, you agree that your contributions will be licensed under the Elastic License 2.0.

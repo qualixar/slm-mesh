@@ -1,7 +1,7 @@
 /**
  * SLM Mesh — Broker HTTP Server
  * Zero-dependency HTTP server using node:http with JSON routing.
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * Part of the Qualixar research initiative
  */
 

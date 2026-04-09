@@ -1,7 +1,7 @@
 /**
  * SLM Mesh — Broker Entry Point
  * Standalone entry for the broker daemon process (spawned by ensure.ts).
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * Part of the Qualixar research initiative
  */
 

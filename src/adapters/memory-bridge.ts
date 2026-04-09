@@ -1,7 +1,7 @@
 /**
  * SLM Mesh — MemoryBridge Interface
  * Defines the contract for integrating with external memory systems.
- * Copyright 2026 Varun Pratap Bhardwaj. MIT License.
+ * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * Part of the Qualixar research initiative
  */
 
