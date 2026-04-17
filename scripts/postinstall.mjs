@@ -57,3 +57,11 @@ console.log('  Add to Claude Code:  claude mcp add --scope user slm-mesh -- npx 
 console.log('  Add to Cursor/Windsurf/VS Code:');
 console.log('    { "mcpServers": { "slm-mesh": { "command": "npx", "args": ["slm-mesh"] } } }');
 console.log('  Docs: https://github.com/qualixar/slm-mesh');
+
+console.log('────────────────────────────────────────────────────────────');
+console.log('  ⭐ Help us grow!');
+console.log('  If this saves you time, please star the repo:');
+console.log('    https://github.com/qualixar/slm-mesh');
+console.log('  Part of the Qualixar AI Agent Reliability Platform:');
+console.log('    https://qualixar.com  (7 OSS products, 19K+ monthly downloads)');
+console.log('────────────────────────────────────────────────────────────\n');
