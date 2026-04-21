@@ -157,12 +157,17 @@ export function createHandlers(deps: HandlerDeps) {
   // Lock
   const stmtLockGet = db.prepare('SELECT * FROM locks WHERE file_path = ?');
   const stmtLockPeerName = db.prepare('SELECT name FROM peers WHERE id = ?');
-  const stmtLockDeleteByPath = db.prepare('DELETE FROM locks WHERE file_path = ?');
+  const stmtLockDeleteExpiredByPath = db.prepare(
+    "DELETE FROM locks WHERE file_path = ? AND datetime(expires_at) <= datetime('now')",
+  );
+  const stmtLockMinutesRemaining = db.prepare(
+    "SELECT CAST(((julianday(expires_at) - julianday('now')) * 24 * 60) + 0.999999 AS INTEGER) AS minutes_left FROM locks WHERE file_path = ?",
+  );
   const stmtLockInsert = db.prepare(
-    'INSERT INTO locks (file_path, locked_by, locked_at, expires_at, reason) VALUES (?, ?, ?, ?, ?)',
+    "INSERT INTO locks (file_path, locked_by, locked_at, expires_at, reason) VALUES (?, ?, datetime('now'), datetime('now', '+' || ? || ' minutes'), ?)",
   );
   const stmtLockUnlock = db.prepare('DELETE FROM locks WHERE file_path = ? AND locked_by = ?');
-  const stmtLockCleanExpired = db.prepare("DELETE FROM locks WHERE expires_at < datetime('now')");
+  const stmtLockCleanExpired = db.prepare("DELETE FROM locks WHERE datetime(expires_at) <= datetime('now')");
   const stmtLockAll = db.prepare('SELECT * FROM locks');
 
   // TTL cleanup (PERF-009)
@@ -539,27 +544,23 @@ export function createHandlers(deps: HandlerDeps) {
     const ttlMinutes = validateNumber(body['ttlMinutes']) ?? 10;
 
     // Check existing lock
+    stmtLockDeleteExpiredByPath.run(filePath);
     const existing = stmtLockGet.get(filePath) as LockRow | undefined;
     if (existing) {
-      const expiresAt = new Date(existing.expires_at);
-      if (expiresAt > new Date()) {
-        const peer = stmtLockPeerName.get(existing.locked_by) as { name: string } | undefined;
-        const peerName = peer?.name ?? existing.locked_by;
-        const minutesLeft = Math.ceil((expiresAt.getTime() - Date.now()) / 60_000);
-        // API-026: Use "reason: X" format instead of "(X)"
-        const reasonSuffix = existing.reason ? `, reason: ${existing.reason}` : '';
-        return {
-          ok: false,
-          error: `File locked by ${peerName}${reasonSuffix}. Expires in ${minutesLeft} minutes.`,
-        };
-      }
-      // Expired lock — clean up
-      stmtLockDeleteByPath.run(filePath);
+      const peer = stmtLockPeerName.get(existing.locked_by) as { name: string } | undefined;
+      const peerName = peer?.name ?? existing.locked_by;
+      const minutesLeftRow = stmtLockMinutesRemaining.get(filePath) as
+        | { minutes_left: number | null }
+        | undefined;
+      const minutesLeft = Math.max(1, minutesLeftRow?.minutes_left ?? 1);
+      const reasonSuffix = existing.reason ? `, reason: ${existing.reason}` : '';
+      return {
+        ok: false,
+        error: `File locked by ${peerName}${reasonSuffix}. Expires in ${minutesLeft} minutes.`,
+      };
     }
 
-    const now = new Date();
-    const expires = new Date(now.getTime() + ttlMinutes * 60_000);
-    stmtLockInsert.run(filePath, peerId, now.toISOString(), expires.toISOString(), reason);
+    stmtLockInsert.run(filePath, peerId, ttlMinutes, reason);
 
     const lockRow = stmtLockGet.get(filePath) as LockRow;
     emitEvent('file_locked', { filePath, lockedBy: peerId, reason }, peerId);

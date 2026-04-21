@@ -20,7 +20,7 @@ Set a description of what you are working on. Visible to other agents.
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `summary` | string (max 500 chars) | Yes | Brief description |
+| `summary` | string (max 2500 chars) | Yes | Brief description |
 
 ### mesh_send
 

@@ -35,7 +35,7 @@ Show broker health, peer counts, message stats, lock counts.
 
 ```bash
 slm-mesh status
-# SLM Mesh v1.0.0 | Part of the Qualixar research initiative
+# SLM Mesh v1.2.6 | Part of the Qualixar research initiative
 #
 # Status:    ok
 # Uptime:    3,600s

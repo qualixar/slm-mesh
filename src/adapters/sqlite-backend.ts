@@ -32,9 +32,43 @@ import {
 
 export class SqliteBackend implements BackendAdapter {
   private readonly db: Database.Database;
+  private readonly stmtLockGet: Database.Statement;
+  private readonly stmtLockPeerName: Database.Statement;
+  private readonly stmtLockDeleteByPath: Database.Statement;
+  private readonly stmtLockDeleteExpiredByPath: Database.Statement;
+  private readonly stmtLockMinutesRemaining: Database.Statement;
+  private readonly stmtLockInsert: Database.Statement;
+  private readonly stmtLockUnlock: Database.Statement;
+  private readonly stmtLockCleanExpired: Database.Statement;
+  private readonly stmtLockAll: Database.Statement;
 
   constructor(db: Database.Database) {
     this.db = db;
+    this.stmtLockGet = this.db.prepare(
+      'SELECT * FROM locks WHERE file_path = ?',
+    );
+    this.stmtLockPeerName = this.db.prepare(
+      'SELECT name FROM peers WHERE id = ?',
+    );
+    this.stmtLockDeleteByPath = this.db.prepare(
+      'DELETE FROM locks WHERE file_path = ?',
+    );
+    this.stmtLockDeleteExpiredByPath = this.db.prepare(
+      "DELETE FROM locks WHERE file_path = ? AND datetime(expires_at) <= datetime('now')",
+    );
+    this.stmtLockMinutesRemaining = this.db.prepare(
+      "SELECT CAST(((julianday(expires_at) - julianday('now')) * 24 * 60) + 0.999999 AS INTEGER) AS minutes_left FROM locks WHERE file_path = ?",
+    );
+    this.stmtLockInsert = this.db.prepare(
+      "INSERT INTO locks (file_path, locked_by, locked_at, expires_at, reason) VALUES (?, ?, datetime('now'), datetime('now', '+' || ? || ' minutes'), ?)",
+    );
+    this.stmtLockUnlock = this.db.prepare(
+      'DELETE FROM locks WHERE file_path = ? AND locked_by = ?',
+    );
+    this.stmtLockCleanExpired = this.db.prepare(
+      "DELETE FROM locks WHERE datetime(expires_at) <= datetime('now')",
+    );
+    this.stmtLockAll = this.db.prepare('SELECT * FROM locks');
   }
 
   // --- Peers ---
@@ -242,75 +276,50 @@ export class SqliteBackend implements BackendAdapter {
     reason: string,
     ttlMinutes: number,
   ): Lock | { error: string } {
-    const existing = this.db.prepare(
-      'SELECT * FROM locks WHERE file_path = ?',
-    ).get(filePath) as LockRow | undefined;
+    this.stmtLockDeleteExpiredByPath.run(filePath);
+    const existing = this.stmtLockGet.get(filePath) as LockRow | undefined;
 
     if (existing) {
-      const expiresAt = new Date(existing.expires_at);
-      if (expiresAt > new Date()) {
-        const peer = this.db.prepare(
-          'SELECT name FROM peers WHERE id = ?',
-        ).get(existing.locked_by) as { name: string } | undefined;
+      const peer = this.stmtLockPeerName.get(existing.locked_by) as
+        | { name: string }
+        | undefined;
+      const minutesLeft = this.stmtLockMinutesRemaining.get(filePath) as
+        | { minutes_left: number | null }
+        | undefined;
+      const remaining = Math.max(1, minutesLeft?.minutes_left ?? 1);
+      if (remaining > 0) {
         const peerName = peer?.name ?? existing.locked_by;
-        const minutesLeft = Math.ceil(
-          (expiresAt.getTime() - Date.now()) / 60_000,
-        );
         return {
-          error: `File locked by ${peerName} (${existing.reason || 'no reason'}). Expires in ${minutesLeft} minutes.`,
+          error: `File locked by ${peerName} (${existing.reason || 'no reason'}). Expires in ${remaining} minutes.`,
         };
       }
-      // Expired — clean up
-      this.db.prepare(
-        'DELETE FROM locks WHERE file_path = ?',
-      ).run(filePath);
+      this.stmtLockDeleteByPath.run(filePath);
     }
 
-    const now = new Date();
-    const expires = new Date(now.getTime() + ttlMinutes * 60_000);
+    this.stmtLockInsert.run(filePath, peerId, ttlMinutes, reason);
 
-    this.db.prepare(
-      'INSERT INTO locks (file_path, locked_by, locked_at, expires_at, reason) VALUES (?, ?, ?, ?, ?)',
-    ).run(
-      filePath,
-      peerId,
-      now.toISOString(),
-      expires.toISOString(),
-      reason,
-    );
-
-    const lockRow = this.db.prepare(
-      'SELECT * FROM locks WHERE file_path = ?',
-    ).get(filePath) as LockRow;
+    const lockRow = this.stmtLockGet.get(filePath) as LockRow;
 
     return lockFromRow(lockRow);
   }
 
   unlockFile(filePath: string, peerId: PeerId): boolean {
-    const result = this.db.prepare(
-      'DELETE FROM locks WHERE file_path = ? AND locked_by = ?',
-    ).run(filePath, peerId);
+    const result = this.stmtLockUnlock.run(filePath, peerId);
 
     return result.changes > 0;
   }
 
   queryLocks(filePath?: string): Lock[] {
     // Clean expired locks first
-    this.db.prepare(
-      "DELETE FROM locks WHERE expires_at < datetime('now')",
-    ).run();
+    this.stmtLockCleanExpired.run();
 
     if (filePath) {
-      const row = this.db.prepare(
-        'SELECT * FROM locks WHERE file_path = ?',
-      ).get(filePath) as LockRow | undefined;
+      const row = this.stmtLockGet.get(filePath) as LockRow | undefined;
 
       return row ? [lockFromRow(row)] : [];
     }
 
-    const rows = this.db.prepare(
-      'SELECT * FROM locks',
-    ).all() as LockRow[];
+    const rows = this.stmtLockAll.all() as LockRow[];
 
     return rows.map(lockFromRow);
   }

@@ -197,7 +197,7 @@ The Python client wraps the broker HTTP API. Zero dependencies (stdlib only). Th
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                   SLM Mesh v1.0.0                    │
+│                   SLM Mesh v1.2.6                    │
 │                                                      │
 │  ┌──────────────┐     ┌───────────────────────────┐  │
 │  │ Broker        │     │ MCP Server (per session)  │  │
