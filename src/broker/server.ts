@@ -18,10 +18,6 @@ interface Route {
 
 const MAX_BODY_BYTES = 1_048_576; // 1MB
 
-/**
- * Create and configure the broker HTTP server.
- * Routes are registered via addRoute(), then start() binds to a port.
- */
 /** Paths that do NOT require bearer token authentication. */
 const AUTH_EXEMPT_PATHS: ReadonlySet<string> = new Set(['/health']);
 
@@ -29,14 +25,15 @@ export class BrokerHttpServer {
   // PERF-012: Map keyed by "METHOD /path" for O(1) route lookup
   private readonly _routeMap = new Map<string, Route>();
   private _server: Server | null = null;
-  private _bearerToken: string | null = null;
+  private _validTokens: Set<string> = new Set();
 
   /**
-   * Set the bearer token that all non-exempt requests must present.
-   * Call before start(). Pass null to disable auth (testing only).
+   * Set the bearer tokens that valid requests must present.
+   * Call before start(). Pass empty set to disable auth (testing only).
+   * Multiple tokens supported: local auto-generated token + shared secret.
    */
-  setBearerToken(token: string | null): void {
-    this._bearerToken = token;
+  setBearerTokens(tokens: Set<string>): void {
+    this._validTokens = tokens;
   }
 
   addRoute(method: string, path: string, handler: RouteHandler): void {
@@ -84,18 +81,22 @@ export class BrokerHttpServer {
     return this._server?.listening ?? false;
   }
 
+  private _isAuthorized(req: IncomingMessage): boolean {
+    if (this._validTokens.size === 0) return true;
+    const authHeader = req.headers['authorization'] ?? '';
+    for (const token of this._validTokens) {
+      if (authHeader === `Bearer ${token}`) return true;
+    }
+    return false;
+  }
+
   private async _handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const method = req.method?.toUpperCase() ?? 'GET';
     const url = req.url ?? '/';
 
-    // Bearer token authentication (skip exempt paths like /health)
-    if (this._bearerToken && !AUTH_EXEMPT_PATHS.has(url)) {
-      const authHeader = req.headers['authorization'] ?? '';
-      const expectedHeader = `Bearer ${this._bearerToken}`;
-      if (authHeader !== expectedHeader) {
-        sendJson(res, 401, { ok: false, error: 'Unauthorized — invalid or missing bearer token' });
-        return;
-      }
+    if (!AUTH_EXEMPT_PATHS.has(url) && !this._isAuthorized(req)) {
+      sendJson(res, 401, { ok: false, error: 'Unauthorized — invalid or missing bearer token' });
+      return;
     }
 
     // PERF-012: O(1) route lookup via Map
@@ -107,7 +108,6 @@ export class BrokerHttpServer {
       return;
     }
 
-    // For GET requests, no body parsing needed
     if (method === 'GET') {
       try {
         const result = await route.handler({});
@@ -119,7 +119,6 @@ export class BrokerHttpServer {
       return;
     }
 
-    // Parse JSON body for POST requests
     let body: Record<string, unknown>;
     try {
       body = await parseJsonBody(req);

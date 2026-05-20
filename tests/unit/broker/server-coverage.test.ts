@@ -17,7 +17,7 @@ describe('BrokerHttpServer coverage', () => {
 
   async function startServer(token: string | null = null): Promise<number> {
     server = new BrokerHttpServer();
-    server.setBearerToken(token);
+    server.setBearerTokens(token ? new Set([token]) : new Set());
     server.addRoute('GET', '/test', () => ({ ok: true }));
     server.addRoute('GET', '/throw', () => { throw new Error('boom'); });
     server.addRoute('POST', '/echo', (body) => ({ ok: true, body }));

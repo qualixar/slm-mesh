@@ -1,10 +1,3 @@
-/**
- * SLM Mesh — Main Broker Class
- * Orchestrates all components: HTTP server, DB, push, timers, lifecycle.
- * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
- * Part of the Qualixar research initiative
- */
-
 import type { MeshConfig } from '../config.js';
 import { BRANDING } from '../config.js';
 import { openDatabase, closeDatabase, checkpointWal } from '../db/connection.js';
@@ -13,6 +6,8 @@ import { ensureDir } from '../util/paths.js';
 import { BrokerHttpServer } from './server.js';
 import { createHandlers } from './handlers.js';
 import { PushManager } from './push/manager.js';
+import { createWsServer, type WsServer } from './push/ws-server.js';
+import { createDiscovery, type DiscoveryService } from './discovery.js';
 import { IdleShutdownTimer } from './idle.js';
 import { markStalePeers, cleanDeadPeers, sweepStaleSockets } from './cleanup.js';
 import { writePidFile, removePidFile, readPidFile, isProcessAlive, isPidFileStale } from './pid.js';
@@ -24,6 +19,8 @@ export class Broker {
   private readonly _config: MeshConfig;
   private _db: Database.Database | null = null;
   private _httpServer: BrokerHttpServer | null = null;
+  private _wsServer: WsServer | null = null;
+  private _discovery: DiscoveryService | null = null;
   private _push: PushManager | null = null;
   private _idleTimer: IdleShutdownTimer | null = null;
   private _checkpointTimer: ReturnType<typeof setInterval> | null = null;
@@ -31,7 +28,6 @@ export class Broker {
   private _shuttingDown = false;
   private _startedAt = 0;
   private _actualPort = 0;
-  // PERF-011: Store signal handler refs for cleanup
   private _signalHandlers: Array<{ event: string; handler: (...args: unknown[]) => void }> = [];
 
   constructor(config: MeshConfig) {
@@ -41,11 +37,9 @@ export class Broker {
   async start(): Promise<void> {
     const config = this._config;
 
-    // 1-3: Ensure directories
     ensureDir(config.dataDir);
     ensureDir(config.peersDir);
 
-    // 4: Check existing PID
     if (isPidFileStale(config.pidPath)) {
       log('Removing stale PID file');
       const stalePid = readPidFile(config.pidPath);
@@ -60,22 +54,17 @@ export class Broker {
       }
     }
 
-    // 5-7: Open database
     this._db = openDatabase(config);
-
-    // 8: Clean stale peers from previous crash
     this._cleanStaleFromCrash();
-
-    // 8b: Sweep stale socket files
     sweepStaleSockets(config.peersDir);
 
-    // 9: Generate bearer token BEFORE starting HTTP server
     const token = generateToken();
     writeTokenFile(config.tokenPath, token);
+    const validTokens = new Set([token]);
+    if (config.sharedSecret) validTokens.add(config.sharedSecret);
 
-    // 10: Start HTTP server
     this._httpServer = new BrokerHttpServer();
-    this._httpServer.setBearerToken(token);
+    this._httpServer.setBearerTokens(validTokens);
     this._push = new PushManager();
     this._startedAt = Date.now();
 
@@ -88,7 +77,6 @@ export class Broker {
       config,
     });
 
-    // Register routes
     this._httpServer.addRoute('GET', '/health', handlers.handleHealth);
     this._httpServer.addRoute('GET', '/status', () => {
       const result = handlers.handleStatus();
@@ -113,7 +101,6 @@ export class Broker {
     this._httpServer.addRoute('POST', '/lock', handlers.handleLock);
     this._httpServer.addRoute('POST', '/events', handlers.handleEvents);
 
-    // Find available port and start
     this._actualPort = await findAvailablePort(
       config.brokerPort,
       config.brokerHost,
@@ -121,10 +108,39 @@ export class Broker {
     );
     await this._httpServer.start(this._actualPort, config.brokerHost);
 
-    // 10-11: Write PID and port files (catch race with another broker)
+    // Start WebSocket server for remote push
+    this._wsServer = createWsServer(
+      config.wsPort,
+      config.brokerHost,
+      validTokens,
+      (data) => {
+        if (typeof data === 'object' && data !== null) {
+          log(`WS message received: ${JSON.stringify(data).slice(0, 200)}`);
+        }
+      },
+      (clientId) => {
+        log(`WS client connected: ${clientId}`);
+      },
+      (clientId) => {
+        log(`WS client disconnected: ${clientId}`);
+      },
+    );
+    await this._wsServer.start();
+
+    // Start mDNS discovery for LAN auto-discovery
+    if (config.discoveryEnabled) {
+      this._discovery = createDiscovery(
+        config.brokerHost,
+        this._actualPort,
+        config.wsPort,
+      );
+      await this._discovery.start();
+      log('mDNS discovery active — other machines on LAN can find this broker');
+    }
+
     try {
       writePidFile(config.pidPath, process.pid);
-      /* v8 ignore next 5 -- PID file race is a rare startup condition */
+      /* v8 ignore next 5 */
     } catch (err) {
       logError('PID file race — another broker started first', err);
       await this.stop();
@@ -132,8 +148,7 @@ export class Broker {
     }
     writePortFile(config.portPath, this._actualPort);
 
-    // 12: Start idle shutdown timer
-    /* v8 ignore start -- idle shutdown callback fires after configurable timeout */
+    /* v8 ignore start */
     this._idleTimer = new IdleShutdownTimer(config.idleShutdownMs, () => {
       const count = (this._db?.prepare("SELECT COUNT(*) as c FROM peers WHERE status = 'active'").get() as { c: number })?.c ?? 0;
       if (count === 0) {
@@ -145,8 +160,7 @@ export class Broker {
     });
     /* v8 ignore stop */
 
-    // 13: WAL checkpoint timer
-    /* v8 ignore start -- timer callbacks fire on interval */
+    /* v8 ignore start */
     this._checkpointTimer = setInterval(() => {
       if (this._db) {
         checkpointWal(this._db, 'RESTART');
@@ -154,7 +168,6 @@ export class Broker {
     }, config.walCheckpointIntervalMs);
     this._checkpointTimer.unref();
 
-    // 14: Stale cleanup timer + PERF-009 TTL pruning
     this._cleanupTimer = setInterval(() => {
       if (this._db) {
         markStalePeers(this._db, config.staleThresholdMs);
@@ -162,15 +175,13 @@ export class Broker {
         for (const id of deadIds) {
           this._push?.disconnect(id);
         }
-        // PERF-009: Prune old messages (>24h) and events (>48h)
         handlers.pruneExpiredData();
       }
     }, config.heartbeatIntervalMs);
     this._cleanupTimer.unref();
     /* v8 ignore stop */
 
-    // 15: Signal handlers — PERF-011: store refs for cleanup in stop()
-    /* v8 ignore start -- signal handler closures only fire on process signals */
+    /* v8 ignore start */
     const shutdown = () => void this.stop();
     const onUncaught = (err: unknown) => {
       logError('Uncaught exception', err);
@@ -196,6 +207,7 @@ export class Broker {
 
     log(BRANDING);
     log(`Broker started on ${config.brokerHost}:${this._actualPort} (PID ${process.pid})`);
+    log(`WebSocket push server on ${config.brokerHost}:${config.wsPort}`);
   }
 
   async stop(): Promise<void> {
@@ -204,23 +216,25 @@ export class Broker {
 
     log('Broker shutting down...');
 
-    // PERF-011: Remove signal handlers to prevent leaks
     for (const { event, handler } of this._signalHandlers) {
       process.removeListener(event, handler);
     }
     this._signalHandlers = [];
 
-    // Clear timers
     this._idleTimer?.stop();
     if (this._checkpointTimer) clearInterval(this._checkpointTimer);
     if (this._cleanupTimer) clearInterval(this._cleanupTimer);
 
-    // Stop HTTP
+    if (this._discovery) {
+      await this._discovery.stop();
+    }
+    if (this._wsServer) {
+      await this._wsServer.stop();
+    }
     if (this._httpServer) {
       await this._httpServer.stop();
     }
 
-    // Notify peers and disconnect
     this._push?.broadcast({
       type: 'shutdown',
       payload: {},
@@ -228,13 +242,11 @@ export class Broker {
     });
     this._push?.disconnectAll();
 
-    // Checkpoint and close DB
     if (this._db) {
       closeDatabase(this._db);
       this._db = null;
     }
 
-    // Cleanup files (verify own PID before removing)
     removePidFile(this._config.pidPath, process.pid);
     removePortFile(this._config.portPath);
     removeTokenFile(this._config.tokenPath);
@@ -248,6 +260,10 @@ export class Broker {
 
   get port(): number {
     return this._actualPort;
+  }
+
+  get discoveredBrokers(): ReturnType<DiscoveryService['getDiscoveredBrokers']> {
+    return this._discovery?.getDiscoveredBrokers() ?? [];
   }
 
   private _cleanStaleFromCrash(): void {

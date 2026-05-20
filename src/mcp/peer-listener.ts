@@ -1,7 +1,7 @@
 /**
- * SLM Mesh -- Peer UDS Listener
- * Each MCP server opens a UDS listener so the broker can push notifications.
- * Architecture: Peer-as-Server, Broker-as-Client.
+ * SLM Mesh -- Peer Listener (UDS + WebSocket)
+ * UDS for local broker connections, WebSocket for remote brokers.
+ * Architecture: Peer-as-Server (UDS) + Peer-as-Client (WebSocket).
  * Copyright 2026 Varun Pratap Bhardwaj. Elastic-2.0.
  * Part of the Qualixar research initiative
  */
@@ -23,8 +23,78 @@ export interface PeerListener {
 }
 
 /**
- * Create a UDS listener for this peer. The broker connects to push
- * notifications (messages, events, lock updates, shutdown).
+ * WebSocket client for remote broker push.
+ * Uses raw node:http upgrade — no external WS library dependency.
+ */
+class WsPushClient {
+  private _ws: ReturnType<typeof setInterval> | null = null;
+  private _reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private _running = false;
+  private _reconnectDelay = 1000;
+
+  constructor(
+    private readonly _host: string,
+    private readonly _wsPort: number,
+    private readonly _token: string,
+    private readonly _onNotification: PushHandler,
+  ) {}
+
+  async start(): Promise<void> {
+    this._running = true;
+    await this._connect();
+  }
+
+  async stop(): Promise<void> {
+    this._running = false;
+    if (this._reconnectTimer) {
+      clearTimeout(this._reconnectTimer);
+      this._reconnectTimer = null;
+    }
+    if (this._ws) {
+      clearInterval(this._ws);
+      this._ws = null;
+    }
+  }
+
+  private async _connect(): Promise<void> {
+    if (!this._running) return;
+    try {
+      const { default: WebSocket } = await import('ws');
+      const url = `ws://${this._host}:${this._wsPort}/ws`;
+      const ws = new WebSocket(url, {
+        headers: { Authorization: `Bearer ${this._token}` },
+      });
+      ws.on('message', (data: Buffer) => {
+        try {
+          const parsed = JSON.parse(data.toString());
+          this._onNotification(parsed);
+        } catch {
+          // Ignore malformed messages
+        }
+      });
+      ws.on('close', () => {
+        if (this._running) this._scheduleReconnect();
+      });
+      ws.on('error', () => {
+        // Will trigger 'close'
+      });
+      log(`WebSocket push client connected to ${url}`);
+    } catch {
+      this._scheduleReconnect();
+    }
+  }
+
+  private _scheduleReconnect(): void {
+    if (!this._running) return;
+    this._reconnectDelay = Math.min(this._reconnectDelay * 2, 30_000);
+    this._reconnectTimer = setTimeout(() => {
+      void this._connect();
+    }, this._reconnectDelay);
+  }
+}
+
+/**
+ * Create a peer listener — UDS for local broker, WebSocket client for remote.
  */
 export function createPeerListener(
   peerId: string,
@@ -33,8 +103,8 @@ export function createPeerListener(
 ): PeerListener {
   const socketPath = peerSocketPath(config.peersDir, peerId);
   let server: Server | null = null;
-  // PERF-016: Set for O(1) add/delete instead of Array indexOf+splice
   const connections = new Set<Socket>();
+  let wsClient: WsPushClient | null = null;
 
   /* v8 ignore start -- defensive cleanup of leftover socket files */
   function cleanStaleSocket(): void {
@@ -49,48 +119,63 @@ export function createPeerListener(
   /* v8 ignore stop */
 
   async function start(): Promise<void> {
-    ensureDir(config.peersDir);
-    cleanStaleSocket();
+    if (config.isRemoteEnabled && config.sharedSecret) {
+      // Remote broker: connect via WebSocket client
+      wsClient = new WsPushClient(
+        config.brokerHost,
+        config.wsPort,
+        config.sharedSecret,
+        onNotification,
+      );
+      await wsClient.start();
+    } else {
+      // Local broker: create UDS listener
+      ensureDir(config.peersDir);
+      cleanStaleSocket();
 
-    return new Promise<void>((resolve, reject) => {
-      server = createServer((socket) => {
-        connections.add(socket);
-        const parse = createNdjsonParser((data) => {
-          onNotification(data);
+      await new Promise<void>((resolve, reject) => {
+        server = createServer((socket) => {
+          connections.add(socket);
+          const parse = createNdjsonParser((data) => {
+            onNotification(data);
+          });
+          socket.on('data', (chunk) => parse(chunk));
+          /* v8 ignore start -- fires on socket-level I/O error */
+          socket.on('error', (err) => {
+            logError('Peer listener socket error', err);
+          });
+          /* v8 ignore stop */
+          socket.on('close', () => {
+            connections.delete(socket);
+          });
         });
-        socket.on('data', (chunk) => parse(chunk));
-        /* v8 ignore start -- fires on socket-level I/O error */
-        socket.on('error', (err) => {
-          logError('Peer listener socket error', err);
+
+        /* v8 ignore start -- fires on server bind failure */
+        server.on('error', (err) => {
+          logError('Peer listener server error', err);
+          reject(err);
         });
         /* v8 ignore stop */
-        socket.on('close', () => {
-          connections.delete(socket);
+
+        server.listen(socketPath, () => {
+          try {
+            chmodSync(socketPath, 0o600);
+            /* v8 ignore next 3 */
+          } catch {
+            // Best effort
+          }
+          log(`Peer listener started: ${socketPath}`);
+          resolve();
         });
       });
-
-      /* v8 ignore start -- fires on server bind failure */
-      server.on('error', (err) => {
-        logError('Peer listener server error', err);
-        reject(err);
-      });
-      /* v8 ignore stop */
-
-      server.listen(socketPath, () => {
-        // Set restrictive permissions on socket file
-        try {
-          chmodSync(socketPath, 0o600);
-          /* v8 ignore next 3 */
-        } catch {
-          // Best effort — some platforms may not support this
-        }
-        log(`Peer listener started: ${socketPath}`);
-        resolve();
-      });
-    });
+    }
   }
 
   async function stop(): Promise<void> {
+    if (wsClient) {
+      await wsClient.stop();
+      wsClient = null;
+    }
     for (const conn of connections) {
       conn.destroy();
     }

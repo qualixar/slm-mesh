@@ -12,6 +12,10 @@ export interface MeshConfig {
   readonly dbPath: string;
   readonly brokerPort: number;
   readonly brokerHost: string;
+  readonly wsPort: number;
+  readonly sharedSecret: string | null;
+  readonly isRemoteEnabled: boolean;
+  readonly discoveryEnabled: boolean;
   readonly pidPath: string;
   readonly portPath: string;
   readonly tokenPath: string;
@@ -26,9 +30,11 @@ export interface MeshConfig {
   readonly walCheckpointIntervalMs: number;
 }
 
-export const VERSION = '1.2.2';
+export const VERSION = '1.3.0';
 export const PRODUCT_NAME = 'SLM Mesh';
 export const BRANDING = `${PRODUCT_NAME} v${VERSION} | Part of the Qualixar research initiative`;
+
+const LOCAL_HOSTS: ReadonlySet<string> = new Set(['127.0.0.1', 'localhost', '::1']);
 
 function envInt(key: string, fallback: number): number {
   const val = process.env[key];
@@ -41,28 +47,35 @@ function envStr(key: string, fallback: string): string {
   return process.env[key] ?? fallback;
 }
 
-/**
- * SEC-007: Only allow localhost binding. Prevents accidental exposure to the network.
- */
-function validateBrokerHost(host: string): string {
-  const ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '::1'] as const;
-  if (!(ALLOWED_HOSTS as readonly string[]).includes(host)) {
-    throw new Error(
-      `Invalid SLM_MESH_HOST: "${host}". Only localhost binding is allowed (127.0.0.1, localhost, ::1).`,
-    );
-  }
-  return host;
+function isLocalhost(host: string): boolean {
+  return LOCAL_HOSTS.has(host);
 }
 
 export function createConfig(overrides?: Partial<MeshConfig>): MeshConfig {
   const dataDir = overrides?.dataDir
     ?? envStr('SLM_MESH_DATA_DIR', join(homedir(), '.slm-mesh'));
 
+  const brokerHost = overrides?.brokerHost ?? envStr('SLM_MESH_HOST', '127.0.0.1');
+  const remoteEnabled = !isLocalhost(brokerHost);
+  const sharedSecret = envStr('SLM_MESH_SHARED_SECRET', '') || null;
+  const discoveryEnabled = envStr('SLM_MESH_DISCOVERY', 'on') !== 'off';
+
+  if (remoteEnabled && !sharedSecret) {
+    throw new Error(
+      'SLM_MESH_SHARED_SECRET is required when SLM_MESH_HOST is not localhost. '
+      + 'Set it to a shared secret string on all machines in your mesh.',
+    );
+  }
+
   return {
     dataDir,
     dbPath: overrides?.dbPath ?? join(dataDir, 'mesh.db'),
     brokerPort: overrides?.brokerPort ?? envInt('SLM_MESH_PORT', 7899),
-    brokerHost: overrides?.brokerHost ?? validateBrokerHost(envStr('SLM_MESH_HOST', '127.0.0.1')),
+    brokerHost,
+    wsPort: overrides?.wsPort ?? envInt('SLM_MESH_WS_PORT', (overrides?.brokerPort ?? envInt('SLM_MESH_PORT', 7899)) + 1),
+    sharedSecret,
+    isRemoteEnabled: remoteEnabled,
+    discoveryEnabled: remoteEnabled && discoveryEnabled,
     pidPath: overrides?.pidPath ?? join(dataDir, 'broker.pid'),
     portPath: overrides?.portPath ?? join(dataDir, 'port'),
     tokenPath: overrides?.tokenPath ?? join(dataDir, 'broker.token'),

@@ -18,7 +18,7 @@ describe('BrokerHttpServer — bearer token auth', () => {
 
   async function startServer(token: string | null): Promise<number> {
     server = new BrokerHttpServer();
-    server.setBearerToken(token);
+    server.setBearerTokens(token ? new Set([token]) : new Set());
     server.addRoute('GET', '/health', () => ({ ok: true, status: 'healthy' }));
     server.addRoute('GET', '/status', () => ({ ok: true, uptime: 123 }));
     server.addRoute('POST', '/register', (body) => ({ ok: true, peerId: body['pid'] }));
