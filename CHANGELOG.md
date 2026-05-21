@@ -5,6 +5,37 @@ All notable changes to SLM Mesh will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] - 2026-05-21
+
+### Added
+
+- **Multi-Machine Mesh** — Agents across different machines can now coordinate in real-time
+- **WebSocket Push Transport** — Remote peer connections via authenticated WebSocket on port 7900
+- **mDNS Auto-Discovery** — Brokers on LAN auto-advertise and are auto-discovered by remote clients
+- **Cross-Machine Peer Routing** — `sendToPeer(peerId)` delivers messages to peers on remote machines
+- **Shared Secret Authentication** — Bearer token for WebSocket connections (`SLM_MESH_SHARED_SECRET` env var)
+- **Environment Variables** — `SLM_MESH_HOST`, `SLM_MESH_SHARED_SECRET`, `SLM_MESH_WS_PORT`, `SLM_MESH_DISCOVERY`
+- **Integration Tests** — Tests for WsPushClient hello handshake, peerId registration, and cleanup
+
+### Changed
+
+- Broker now starts WebSocket server alongside HTTP server for remote connections
+- `WsServer` interface extended with `sendToPeer(peerId, data)` for targeted delivery
+- Handlers updated to support both UDS (local) and WebSocket (remote) push channels
+- README updated with "Multi-Machine Setup" section and quick-start guide
+
+### Fixed
+
+- WsPushClient properly closes WebSocket connections on shutdown
+- Peer disconnect events properly clean up peerId → clientId mappings
+- Hello message registration ensures remote peers are routable
+
+### Security
+
+- All remote connections require shared secret authentication
+- mDNS only advertises on LAN (localhost discovery within private networks)
+- No WAN exposure — WebSocket server doesn't bind to public IPs by default
+
 ## [1.0.0] - 2026-04-08
 
 ### Added

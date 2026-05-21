@@ -14,6 +14,7 @@ export interface WsServer {
   start(): Promise<void>;
   stop(): Promise<void>;
   broadcast(data: unknown): void;
+  sendToPeer(peerId: string, data: unknown): boolean;
   readonly clientCount: number;
 }
 
@@ -29,6 +30,7 @@ export function createWsServer(
   let httpServer: Server | null = null;
   let clientCounter = 0;
   const clients = new Map<string, WebSocket>();
+  const _peerMap = new Map<string, string>(); // Maps peerId → clientId
 
   async function start(): Promise<void> {
     const { WebSocketServer } = await import('ws');
@@ -66,6 +68,11 @@ export function createWsServer(
         ws.on('message', (data: Buffer) => {
           try {
             const parsed = JSON.parse(data.toString());
+            // Intercept hello messages to register peerId → clientId mapping
+            if (parsed.type === 'hello' && typeof parsed.peerId === 'string') {
+              _peerMap.set(parsed.peerId, clientId);
+              return;
+            }
             onMessage(parsed, clientId);
           } catch {
             // Ignore non-JSON frames
@@ -74,6 +81,13 @@ export function createWsServer(
 
         ws.on('close', () => {
           clients.delete(clientId);
+          // Clean up peerId mapping when client disconnects
+          for (const [pid, cid] of _peerMap) {
+            if (cid === clientId) {
+              _peerMap.delete(pid);
+              break;
+            }
+          }
           onDisconnect(clientId);
         });
 
@@ -126,10 +140,24 @@ export function createWsServer(
     }
   }
 
+  function sendToPeer(peerId: string, data: unknown): boolean {
+    const cid = _peerMap.get(peerId);
+    if (!cid) return false;
+    const ws = clients.get(cid);
+    if (!ws || ws.readyState !== 1) return false;
+    try {
+      ws.send(JSON.stringify(data));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   return {
     start,
     stop,
     broadcast,
+    sendToPeer,
     get clientCount(): number {
       return clients.size;
     },

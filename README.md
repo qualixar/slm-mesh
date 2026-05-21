@@ -1,10 +1,10 @@
 # SLM Mesh (SuperLocalMemory Mesh)
 
-**Peer-to-peer communication for AI coding agents.**
+**Peer-to-peer communication for AI coding agents — now across machines.**
 
 [![npm version](https://img.shields.io/npm/v/slm-mesh)](https://www.npmjs.com/package/slm-mesh)
 [![License: Elastic-2.0](https://img.shields.io/badge/License-Elastic--2.0-blue)](LICENSE)
-[![Tests: 480 passing](https://img.shields.io/badge/tests-480_passing-brightgreen)]()
+[![Tests: 490 passing](https://img.shields.io/badge/tests-490_passing-brightgreen)]()
 [![Coverage: 100%](https://img.shields.io/badge/coverage-100%25-brightgreen)]()
 
 > Part of the [Qualixar](https://qualixar.com) research initiative by Varun Pratap Bhardwaj.
@@ -144,6 +144,73 @@ When connected via MCP, your AI agent gets these tools:
 | `mesh_lock` | Advisory file locking (lock, unlock, query) with auto-expire |
 | `mesh_events` | Read or subscribe to mesh events (peer_joined, state_changed, etc.) |
 | `mesh_status` | Check broker health, peer count, message stats |
+
+## Multi-Machine Setup
+
+SLM Mesh supports real-time coordination across machines on the same LAN using WebSocket transport and mDNS auto-discovery.
+
+### Requirements
+
+- Two or more machines on the same local network (WiFi or Ethernet)
+- No firewall blocking port 7900 (configurable) between machines
+- Same `SLM_MESH_SHARED_SECRET` for authentication
+
+### Quick Start: M4 Broker + M5 Client
+
+**On M4 (broker machine):**
+```bash
+export SLM_MESH_HOST=0.0.0.0
+export SLM_MESH_SHARED_SECRET=your-secret-key
+npx slm-mesh start
+# Broker now accepts remote connections on port 7900
+```
+
+**On M5 (client machine):**
+```bash
+export SLM_MESH_HOST=192.168.1.100           # M4's IP
+export SLM_MESH_SHARED_SECRET=your-secret-key # Same secret
+claude mcp add --scope user slm-mesh -- npx slm-mesh
+# M5's agents will connect to M4's broker via WebSocket
+```
+
+All agents on M4 and M5 can now discover, message, and coordinate in real-time.
+
+### Environment Variables
+
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `SLM_MESH_HOST` | `127.0.0.1` | Broker bind address. Use `0.0.0.0` for remote access. |
+| `SLM_MESH_SHARED_SECRET` | (generated) | Bearer token for WebSocket auth. Must match on all machines. |
+| `SLM_MESH_WS_PORT` | `7900` | WebSocket server port (next to HTTP port). |
+| `SLM_MESH_DISCOVERY` | `true` | Enable mDNS auto-discovery on LAN. |
+
+### How It Works
+
+1. **M4 broker** starts and binds to `0.0.0.0:7900` (WebSocket)
+2. **M4 mDNS** advertises `_slm-mesh._tcp.local` on LAN
+3. **M5 client** auto-discovers M4 via mDNS (or manual config)
+4. **M5 agents** connect to M4 broker over WebSocket (TLS recommended for untrusted networks)
+5. **Real-time push** via authenticated WebSocket messages
+6. **Peer discovery**, **messaging**, **state**, and **locks** work transparently across machines
+
+### Security Notes
+
+- WebSocket auth uses bearer token (shared secret). Network must be trusted.
+- For untrusted networks, use a VPN (ZeroTier, Tailscale) to create a secure LAN.
+- LAN-only: No internet exposure. Broker does not open WAN ports.
+
+### mDNS Auto-Discovery
+
+When discovery is enabled (`SLM_MESH_DISCOVERY=true`), the broker advertises itself on the LAN:
+```bash
+# On M5, view discovered brokers
+slm-mesh status
+# Shows: "Discovered on LAN: M4 (192.168.1.100:7900)"
+```
+
+Manually connect to a discovered broker by setting `SLM_MESH_HOST` to its IP and `SLM_MESH_SHARED_SECRET` to its secret.
+
+---
 
 ## CLI
 

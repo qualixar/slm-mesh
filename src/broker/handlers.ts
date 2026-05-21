@@ -11,6 +11,7 @@ import { generateId } from '../util/uuid.js';
 import { VERSION } from '../config.js';
 import type { MeshConfig } from '../config.js';
 import { PushManager } from './push/manager.js';
+import type { WsServer } from './push/ws-server.js';
 import {
   peerFromRow,
   messageFromRow,
@@ -40,6 +41,7 @@ const UUID_V4_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]
 interface HandlerDeps {
   readonly db: Database.Database;
   readonly push: PushManager;
+  readonly wsServer?: WsServer;
   readonly startedAt: number;
   /**
    * QA-007: The subscriptions Map is intentionally mutable.
@@ -100,7 +102,7 @@ function isValidPeerId(peerId: string): boolean {
 }
 
 export function createHandlers(deps: HandlerDeps) {
-  const { db, push, startedAt, subscriptions, config } = deps;
+  const { db, push, wsServer, startedAt, subscriptions, config } = deps;
 
   // --- PERF-004/005: Pre-prepare ALL SQLite statements at creation time ---
   // Event insertion
@@ -266,11 +268,13 @@ export function createHandlers(deps: HandlerDeps) {
 
     emitEvent('peer_left', { peerId, reason: 'clean_exit' }, peerId);
 
-    push.broadcast({
-      type: 'peer_update',
+    const notification = {
+      type: 'peer_update' as const,
       payload: { action: 'left', peerId },
       timestamp: new Date().toISOString(),
-    });
+    };
+    push.broadcast(notification);
+    wsServer?.broadcast(notification);
 
     return { ok: true };
   }
@@ -359,11 +363,12 @@ export function createHandlers(deps: HandlerDeps) {
         stmtInsertMessage.run(msgId, fromPeer, peer.id, type, payload, ts);
         messageIds.push(msgId);
 
-        const delivered = push.send(peer.id, {
-          type: 'message',
+        const notification = {
+          type: 'message' as const,
           payload: { messageId: msgId, fromPeer, text: payload },
           timestamp: ts,
-        });
+        };
+        const delivered = push.send(peer.id, notification) || (wsServer?.sendToPeer(peer.id, notification) ?? false);
         /* v8 ignore next 3 -- requires active push connection for broadcast */
         if (delivered) {
           stmtMarkDelivered.run(msgId);
@@ -416,11 +421,12 @@ export function createHandlers(deps: HandlerDeps) {
     const messageId = generateId();
     stmtInsertMessage.run(messageId, fromPeer, toPeer, type, payload, ts);
 
-    const delivered = push.send(toPeer, {
-      type: 'message',
+    const notification = {
+      type: 'message' as const,
       payload: { messageId, fromPeer, text: payload },
       timestamp: ts,
-    });
+    };
+    const delivered = push.send(toPeer, notification) || (wsServer?.sendToPeer(toPeer, notification) ?? false);
     if (delivered) {
       stmtMarkDelivered.run(messageId);
     }

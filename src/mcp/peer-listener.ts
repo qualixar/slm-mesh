@@ -27,12 +27,13 @@ export interface PeerListener {
  * Uses raw node:http upgrade — no external WS library dependency.
  */
 class WsPushClient {
-  private _ws: ReturnType<typeof setInterval> | null = null;
+  private _ws: import('ws').default | null = null;
   private _reconnectTimer: ReturnType<typeof setTimeout> | null = null;
   private _running = false;
   private _reconnectDelay = 1000;
 
   constructor(
+    private readonly _peerId: string,
     private readonly _host: string,
     private readonly _wsPort: number,
     private readonly _token: string,
@@ -51,7 +52,7 @@ class WsPushClient {
       this._reconnectTimer = null;
     }
     if (this._ws) {
-      clearInterval(this._ws);
+      this._ws.close();
       this._ws = null;
     }
   }
@@ -63,6 +64,10 @@ class WsPushClient {
       const url = `ws://${this._host}:${this._wsPort}/ws`;
       const ws = new WebSocket(url, {
         headers: { Authorization: `Bearer ${this._token}` },
+      });
+      this._ws = ws;
+      ws.on('open', () => {
+        ws.send(JSON.stringify({ type: 'hello', peerId: this._peerId }));
       });
       ws.on('message', (data: Buffer) => {
         try {
@@ -122,6 +127,7 @@ export function createPeerListener(
     if (config.isRemoteEnabled && config.sharedSecret) {
       // Remote broker: connect via WebSocket client
       wsClient = new WsPushClient(
+        peerId,
         config.brokerHost,
         config.wsPort,
         config.sharedSecret,

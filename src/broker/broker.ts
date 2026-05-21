@@ -72,6 +72,7 @@ export class Broker {
     const handlers = createHandlers({
       db: this._db,
       push: this._push,
+      wsServer: this._wsServer ?? undefined,
       startedAt: this._startedAt,
       subscriptions,
       config,
@@ -109,23 +110,25 @@ export class Broker {
     await this._httpServer.start(this._actualPort, config.brokerHost);
 
     // Start WebSocket server for remote push
-    this._wsServer = createWsServer(
-      config.wsPort,
-      config.brokerHost,
-      validTokens,
-      (data) => {
-        if (typeof data === 'object' && data !== null) {
-          log(`WS message received: ${JSON.stringify(data).slice(0, 200)}`);
-        }
-      },
-      (clientId) => {
-        log(`WS client connected: ${clientId}`);
-      },
-      (clientId) => {
-        log(`WS client disconnected: ${clientId}`);
-      },
-    );
-    await this._wsServer.start();
+    if (config.isRemoteEnabled) {
+      this._wsServer = createWsServer(
+        config.wsPort,
+        config.brokerHost,
+        validTokens,
+        (data) => {
+          if (typeof data === 'object' && data !== null) {
+            log(`WS message received: ${JSON.stringify(data).slice(0, 200)}`);
+          }
+        },
+        (clientId) => {
+          log(`WS client connected: ${clientId}`);
+        },
+        (clientId) => {
+          log(`WS client disconnected: ${clientId}`);
+        },
+      );
+      await this._wsServer.start();
+    }
 
     // Start mDNS discovery for LAN auto-discovery
     if (config.discoveryEnabled) {
