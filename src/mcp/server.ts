@@ -456,6 +456,9 @@ export async function startMcpServer(configOverrides?: Partial<MeshConfig>): Pro
 
   log(`Registered as ${registration.name} (${registration.peerId})`);
 
+  // 6.5 Update WS listener with the broker-assigned peerId so hasRemotePeer() matches
+  listener.updatePeerId?.(registration.peerId);
+
   // 7. Set up state
   const state: ServerState = {
     peerId: registration.peerId,

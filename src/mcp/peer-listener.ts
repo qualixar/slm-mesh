@@ -20,6 +20,7 @@ export interface PeerListener {
   readonly socketPath: string;
   start(): Promise<void>;
   stop(): Promise<void>;
+  updatePeerId?(newPeerId: string): void;
 }
 
 /**
@@ -43,6 +44,13 @@ class WsPushClient {
   async start(): Promise<void> {
     this._running = true;
     await this._connect();
+  }
+
+  updatePeerId(newPeerId: string): void {
+    this._peerId = newPeerId;
+    if (this._ws && this._ws.readyState === 1) {
+      this._ws.send(JSON.stringify({ type: 'hello', peerId: newPeerId }));
+    }
   }
 
   async stop(): Promise<void> {
@@ -201,5 +209,12 @@ export function createPeerListener(
     });
   }
 
-  return { socketPath, start, stop };
+  return {
+    socketPath,
+    start,
+    stop,
+    updatePeerId(newPeerId: string) {
+      wsClient?.updatePeerId(newPeerId);
+    },
+  };
 }
