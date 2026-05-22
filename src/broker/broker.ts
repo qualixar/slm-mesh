@@ -151,16 +151,18 @@ export class Broker {
     }
     writePortFile(config.portPath, this._actualPort);
 
-    /* v8 ignore start */
-    this._idleTimer = new IdleShutdownTimer(config.idleShutdownMs, () => {
-      const count = (this._db?.prepare("SELECT COUNT(*) as c FROM peers WHERE status = 'active'").get() as { c: number })?.c ?? 0;
-      if (count === 0) {
-        log('No active peers — idle shutdown');
-        void this.stop();
-      } else {
-        this._idleTimer?.reset();
-      }
-    });
+    if (config.idleShutdownMs > 0) {
+      /* v8 ignore start */
+      this._idleTimer = new IdleShutdownTimer(config.idleShutdownMs, () => {
+        const count = (this._db?.prepare("SELECT COUNT(*) as c FROM peers WHERE status = 'active'").get() as { c: number })?.c ?? 0;
+        if (count === 0) {
+          log('No active peers — idle shutdown');
+          void this.stop();
+        } else {
+          this._idleTimer?.reset();
+        }
+      });
+    }
     /* v8 ignore stop */
 
     /* v8 ignore start */

@@ -1,6 +1,6 @@
 {
   "name": "slm-mesh",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "description": "Peer-to-peer communication for AI coding agents — by Qualixar, powered by SuperLocalMemory",
   "author": "Varun Pratap Bhardwaj",
   "license": "Elastic-2.0",
@@ -31,7 +31,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "better-sqlite3": "^11.9.1",
+    "better-sqlite3": "^12.10.0",
     "bonjour": "^3.5.1",
     "commander": "^14.0.3",
     "ws": "^8.20.1",

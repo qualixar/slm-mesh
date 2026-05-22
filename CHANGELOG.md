@@ -5,6 +5,14 @@ All notable changes to SLM Mesh will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.2] - 2026-05-22
+
+### Added
+- **`SLM_MESH_IDLE_TIMEOUT` env var** (default 60000) — Controls broker idle shutdown timeout. Set to `0` to disable idle shutdown entirely (useful for persistent hub machines expecting delayed peer connections).
+
+### Changed
+- **better-sqlite3 dependency** bumped from `^11.9.1` to `^12.10.0` for Node.js v26 compatibility.
+
 ## [1.3.1] - 2026-05-22
 
 ### Added

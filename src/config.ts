@@ -46,7 +46,7 @@ export interface MeshConfig {
   readonly walCheckpointIntervalMs: number;
 }
 
-export const VERSION = '1.3.1';
+export const VERSION = '1.3.2';
 export const PRODUCT_NAME = 'SLM Mesh';
 export const BRANDING = `${PRODUCT_NAME} v${VERSION} | Part of the Qualixar research initiative`;
 
@@ -106,7 +106,7 @@ export function createConfig(overrides?: Partial<MeshConfig>): MeshConfig {
     heartbeatIntervalMs: overrides?.heartbeatIntervalMs ?? 15_000,
     staleThresholdMs: overrides?.staleThresholdMs ?? 30_000,
     deadThresholdMs: overrides?.deadThresholdMs ?? 60_000,
-    idleShutdownMs: overrides?.idleShutdownMs ?? 60_000,
+    idleShutdownMs: overrides?.idleShutdownMs ?? envInt('SLM_MESH_IDLE_TIMEOUT', 60_000),
     lockDefaultTtlMin: overrides?.lockDefaultTtlMin ?? 10,
     maxPortRetries: overrides?.maxPortRetries ?? 10,
     walCheckpointIntervalMs: overrides?.walCheckpointIntervalMs ?? 30_000,
