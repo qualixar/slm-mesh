@@ -7,6 +7,21 @@
 import { homedir } from 'node:os';
 import { join } from 'node:path';
 
+/**
+ * Machine role in the mesh.
+ *
+ * broker — This machine hosts the broker. Spawns it locally if not running.
+ *          Use on the hub machine (e.g. M5 running SLM_MESH_HOST=0.0.0.0).
+ *
+ * client — This machine is a peer that connects to a REMOTE broker.
+ *          Never spawns a local broker. Fails fast if remote is unreachable.
+ *          Use on every non-hub machine (e.g. M4 pointing at M5).
+ *
+ * auto   — Default. Infers role from SLM_MESH_HOST:
+ *          localhost/127.0.0.1/::1 → broker  |  any other host → client
+ */
+export type MeshRole = 'auto' | 'broker' | 'client';
+
 export interface MeshConfig {
   readonly dataDir: string;
   readonly dbPath: string;
@@ -15,6 +30,7 @@ export interface MeshConfig {
   readonly wsPort: number;
   readonly sharedSecret: string | null;
   readonly isRemoteEnabled: boolean;
+  readonly role: MeshRole;
   readonly discoveryEnabled: boolean;
   readonly pidPath: string;
   readonly portPath: string;
@@ -30,7 +46,7 @@ export interface MeshConfig {
   readonly walCheckpointIntervalMs: number;
 }
 
-export const VERSION = '1.3.0';
+export const VERSION = '1.3.1';
 export const PRODUCT_NAME = 'SLM Mesh';
 export const BRANDING = `${PRODUCT_NAME} v${VERSION} | Part of the Qualixar research initiative`;
 
@@ -60,7 +76,12 @@ export function createConfig(overrides?: Partial<MeshConfig>): MeshConfig {
   const sharedSecret = envStr('SLM_MESH_SHARED_SECRET', '') || null;
   const discoveryEnabled = envStr('SLM_MESH_DISCOVERY', 'on') !== 'off';
 
-  if (remoteEnabled && !sharedSecret) {
+  const rawRole = overrides?.role ?? (envStr('SLM_MESH_ROLE', 'auto') as MeshRole);
+  const role: MeshRole = ['auto', 'broker', 'client'].includes(rawRole) ? rawRole : 'auto';
+  // Effective client mode: explicit "client" OR auto-detected remote host
+  const isClient = role === 'client' || (role === 'auto' && remoteEnabled);
+
+  if (isClient && !sharedSecret) {
     throw new Error(
       'SLM_MESH_SHARED_SECRET is required when SLM_MESH_HOST is not localhost. '
       + 'Set it to a shared secret string on all machines in your mesh.',
@@ -75,7 +96,8 @@ export function createConfig(overrides?: Partial<MeshConfig>): MeshConfig {
     wsPort: overrides?.wsPort ?? envInt('SLM_MESH_WS_PORT', (overrides?.brokerPort ?? envInt('SLM_MESH_PORT', 7899)) + 1),
     sharedSecret,
     isRemoteEnabled: remoteEnabled,
-    discoveryEnabled: remoteEnabled && discoveryEnabled,
+    role,
+    discoveryEnabled: isClient && discoveryEnabled,
     pidPath: overrides?.pidPath ?? join(dataDir, 'broker.pid'),
     portPath: overrides?.portPath ?? join(dataDir, 'port'),
     tokenPath: overrides?.tokenPath ?? join(dataDir, 'broker.token'),

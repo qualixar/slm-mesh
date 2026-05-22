@@ -59,13 +59,16 @@ describe('MCP Server configuration', () => {
   });
 
   it('config rejects non-localhost host via env var', () => {
-    const orig = process.env['SLM_MESH_HOST'];
+    const origHost = process.env['SLM_MESH_HOST'];
+    const origSecret = process.env['SLM_MESH_SHARED_SECRET'];
     try {
       process.env['SLM_MESH_HOST'] = '0.0.0.0';
+      delete process.env['SLM_MESH_SHARED_SECRET'];
       expect(() => createConfig()).toThrow(/localhost/i);
     } finally {
-      if (orig !== undefined) process.env['SLM_MESH_HOST'] = orig;
+      if (origHost !== undefined) process.env['SLM_MESH_HOST'] = origHost;
       else delete process.env['SLM_MESH_HOST'];
+      if (origSecret !== undefined) process.env['SLM_MESH_SHARED_SECRET'] = origSecret;
     }
   });
 

@@ -5,6 +5,22 @@ All notable changes to SLM Mesh will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] - 2026-05-22
+
+### Added
+
+- **`SLM_MESH_ROLE` env var** — Explicit machine role: `broker` (hub machine, spawns local broker), `client` (peer machine, connects to remote broker, never spawns), `auto` (default — infers from `SLM_MESH_HOST`: localhost → broker, remote IP → client)
+- **`role` field in `MeshConfig`** — Programmatic role control for embedders
+
+### Fixed
+
+- **Client machines no longer try to spawn a local broker** — Previously, if a client machine's remote broker was unreachable, `ensureBroker` would silently attempt to start a local broker, fail after 6 seconds, crash the MCP process, and take down all other MCPs in the IDE. Now the MCP fails fast with a clear error pointing to the hub machine.
+- **`SLM_MESH_SHARED_SECRET` env leaking into `createConfig` tests** — Fixed test isolation: the `config rejects non-localhost host` test now clears the secret env var before asserting.
+
+### Changed
+
+- `server.ts` startup resolves effective role (`broker` or `client`) before calling `ensureBroker`, making the decision path explicit and auditable
+
 ## [1.3.0] - 2026-05-21
 
 ### Added

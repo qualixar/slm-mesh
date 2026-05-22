@@ -11,7 +11,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { z } from 'zod/v4';
 import { VERSION, PRODUCT_NAME, createConfig } from '../config.js';
 import type { MeshConfig } from '../config.js';
-import { ensureBroker } from '../broker/ensure.js';
+import { ensureBroker, discoverAndCheckBroker } from '../broker/ensure.js';
 import { brokerRequest } from './broker-client.js';
 import { detectAgentType } from './agent-detect.js';
 import { log, logError } from '../util/logger.js';
@@ -399,12 +399,29 @@ export async function startMcpServer(configOverrides?: Partial<MeshConfig>): Pro
     { instructions: INSTRUCTIONS },
   );
 
-  // 2. Ensure broker is running (auto-spawn if needed)
-  // Resolve broker entry point — broker.js is in the same dist/ directory
-  // QA-019: Renamed from __dirname to avoid shadowing Node.js CJS convention
+  // 2. Resolve broker port based on role.
+  //    client / auto+remote → connect to existing remote broker, never spawn locally.
+  //    broker / auto+local  → spawn local broker if not running.
   const mcpDir = dirname(fileURLToPath(import.meta.url));
   const brokerScript = join(mcpDir, 'broker.js');
-  const brokerPort = await ensureBroker(config, brokerScript);
+  const effectiveRole = config.role === 'auto'
+    ? (config.isRemoteEnabled ? 'client' : 'broker')
+    : config.role;
+  let brokerPort: number;
+  if (effectiveRole === 'client') {
+    const { alive, port } = await discoverAndCheckBroker(config);
+    if (!alive) {
+      throw new Error(
+        `[slm-mesh] Remote broker at ${config.brokerHost}:${config.brokerPort} is unreachable. ` +
+        `Start it on the hub machine: SLM_MESH_HOST=0.0.0.0 SLM_MESH_SHARED_SECRET=<secret> npx slm-mesh`
+      );
+    }
+    brokerPort = port;
+    log(`Connected to remote broker at ${config.brokerHost}:${brokerPort}`);
+  } else {
+    // QA-019: Renamed from __dirname to avoid shadowing Node.js CJS convention
+    brokerPort = await ensureBroker(config, brokerScript);
+  }
 
   // 3. Detect agent type
   const agentType = detectAgentType();

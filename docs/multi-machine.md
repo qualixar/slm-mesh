@@ -2,13 +2,28 @@
 
 **Real-time AI agent coordination across machines on your LAN.**
 
-This guide shows you how to set up SLM Mesh so that agents on different computers (M4, M5, etc.) can discover, message, and coordinate with each other.
+This guide shows you how to set up SLM Mesh so that agents on different computers can discover, message, and coordinate with each other.
+
+---
+
+## Machine Roles
+
+Every machine in the mesh has one of three roles. Set it with `SLM_MESH_ROLE`:
+
+| Role | `SLM_MESH_ROLE` | `SLM_MESH_HOST` | What it does |
+|------|----------------|-----------------|--------------|
+| **Hub (Broker)** | `broker` | `0.0.0.0` | Runs the broker. All other machines connect to this one. Pick ONE hub per mesh. |
+| **Client (Peer)** | `client` | Hub machine's IP | Connects to the hub. Never spawns a local broker. Fails fast if hub is unreachable. |
+| **Standalone** | `broker` (default) | `127.0.0.1` | Local-only. No cross-machine coordination. |
+
+> **`auto` (default):** If `SLM_MESH_HOST` is localhost → broker mode. If it's a remote IP → client mode.
+> Setting `SLM_MESH_ROLE` explicitly is recommended for multi-machine setups to avoid ambiguity.
 
 ---
 
 ## Overview
 
-SLM Mesh v1.3.0 introduces **cross-machine peer coordination** using:
+SLM Mesh v1.3.1 introduces **cross-machine peer coordination** using:
 
 1. **WebSocket Transport** — Authenticated remote connections (port 7900, configurable)
 2. **mDNS Discovery** — Brokers advertise themselves on the LAN; clients auto-discover
@@ -186,29 +201,39 @@ On M4, the agent should receive:
 
 ## Environment Variables Reference
 
-| Variable | Default | Purpose | Example |
-|----------|---------|---------|---------|
-| `SLM_MESH_HOST` | `127.0.0.1` | Broker bind address. Set to `0.0.0.0` on broker machine to allow remote connections. | `0.0.0.0` (M4) or `192.168.1.100` (M5) |
-| `SLM_MESH_SHARED_SECRET` | (auto-generated) | Bearer token for WebSocket auth. Must be identical on all machines. | `7f8a9c3e2b1d...` |
-| `SLM_MESH_WS_PORT` | `7900` | WebSocket server port. Must be open between machines. | `7900` or `8900` |
-| `SLM_MESH_DISCOVERY` | `true` | Enable mDNS auto-discovery on LAN. Set to `false` to disable. | `true` or `false` |
-| `SLM_MESH_PORT_RETRIES` | `10` | Number of ports to try if configured port is busy. | `10` or `1` |
+| Variable | Default | Purpose |
+|----------|---------|---------|
+| `SLM_MESH_ROLE` | `auto` | Machine role: `broker` (hub, spawns broker), `client` (peer, connects to hub, never spawns), `auto` (infers from `SLM_MESH_HOST`) |
+| `SLM_MESH_HOST` | `127.0.0.1` | Broker bind address. `0.0.0.0` = listen on all interfaces (hub). Remote IP = connect to that hub (client). |
+| `SLM_MESH_SHARED_SECRET` | — | Bearer token for all remote connections. **Required** when role is `client` or `SLM_MESH_HOST` is not localhost. Must be identical on all machines. |
+| `SLM_MESH_PORT` | `7899` | HTTP API port for the broker. |
+| `SLM_MESH_WS_PORT` | `7900` | WebSocket push port. Must be reachable from client machines. |
+| `SLM_MESH_DISCOVERY` | `on` | mDNS auto-discovery on LAN. Set `off` to disable. |
+| `SLM_MESH_DATA_DIR` | `~/.slm-mesh` | Where broker stores its DB, PID file, and peer registry. |
 
-**Typical M4 (Broker):**
+**Hub machine (one per mesh):**
 ```bash
+export SLM_MESH_ROLE=broker
 export SLM_MESH_HOST=0.0.0.0
 export SLM_MESH_SHARED_SECRET=your-secret
-export SLM_MESH_WS_PORT=7900
-export SLM_MESH_DISCOVERY=true
-npx slm-mesh start
+npx slm-mesh
 ```
 
-**Typical M5 (Client):**
-```bash
-export SLM_MESH_HOST=192.168.1.100           # M4's IP
-export SLM_MESH_SHARED_SECRET=your-secret    # Same as M4
-export SLM_MESH_WS_PORT=7900                 # Same as M4
-claude mcp add --scope user slm-mesh -- npx slm-mesh
+**Client machine (all other machines) — MCP config:**
+```json
+{
+  "mcpServers": {
+    "slm-mesh": {
+      "command": "npx",
+      "args": ["slm-mesh"],
+      "env": {
+        "SLM_MESH_ROLE": "client",
+        "SLM_MESH_HOST": "192.168.1.100",
+        "SLM_MESH_SHARED_SECRET": "your-secret"
+      }
+    }
+  }
+}
 ```
 
 ---
