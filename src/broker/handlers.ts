@@ -247,7 +247,7 @@ export function createHandlers(deps: HandlerDeps) {
 
     stmtInsertPeer.run(peerId, name, pid, projectPath, gitRoot, gitBranch, agentType, udsPath);
 
-    if (udsPath) {
+    if (udsPath && !wsServer?.hasRemotePeer(peerId)) {
       push.connect(peerId, udsPath);
     }
 
@@ -368,7 +368,10 @@ export function createHandlers(deps: HandlerDeps) {
           payload: { messageId: msgId, fromPeer, text: payload },
           timestamp: ts,
         };
-        const delivered = push.send(peer.id, notification) || (wsServer?.sendToPeer(peer.id, notification) ?? false);
+        // Try WS first if this is a remote peer, fall back to UDS
+        const delivered = (wsServer?.hasRemotePeer(peer.id) && wsServer?.sendToPeer(peer.id, notification))
+          || push.send(peer.id, notification)
+          || (wsServer?.sendToPeer(peer.id, notification) ?? false);
         /* v8 ignore next 3 -- requires active push connection for broadcast */
         if (delivered) {
           stmtMarkDelivered.run(msgId);
@@ -426,7 +429,10 @@ export function createHandlers(deps: HandlerDeps) {
       payload: { messageId, fromPeer, text: payload },
       timestamp: ts,
     };
-    const delivered = push.send(toPeer, notification) || (wsServer?.sendToPeer(toPeer, notification) ?? false);
+    // Try WS first if this is a remote peer, fall back to UDS
+    const delivered = (wsServer?.hasRemotePeer(toPeer) && wsServer?.sendToPeer(toPeer, notification))
+      || push.send(toPeer, notification)
+      || (wsServer?.sendToPeer(toPeer, notification) ?? false);
     if (delivered) {
       stmtMarkDelivered.run(messageId);
     }

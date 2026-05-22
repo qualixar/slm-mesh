@@ -46,7 +46,7 @@ export interface MeshConfig {
   readonly walCheckpointIntervalMs: number;
 }
 
-export const VERSION = '1.3.2';
+export const VERSION = '1.3.3';
 export const PRODUCT_NAME = 'SLM Mesh';
 export const BRANDING = `${PRODUCT_NAME} v${VERSION} | Part of the Qualixar research initiative`;
 

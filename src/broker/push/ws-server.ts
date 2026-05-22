@@ -15,6 +15,7 @@ export interface WsServer {
   stop(): Promise<void>;
   broadcast(data: unknown): void;
   sendToPeer(peerId: string, data: unknown): boolean;
+  hasRemotePeer(peerId: string): boolean;
   readonly clientCount: number;
 }
 
@@ -153,11 +154,16 @@ export function createWsServer(
     }
   }
 
+  function hasRemotePeer(peerId: string): boolean {
+    return _peerMap.has(peerId);
+  }
+
   return {
     start,
     stop,
     broadcast,
     sendToPeer,
+    hasRemotePeer,
     get clientCount(): number {
       return clients.size;
     },
