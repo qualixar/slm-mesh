@@ -7,7 +7,7 @@
 [![Tests: 490 passing](https://img.shields.io/badge/tests-490_passing-brightgreen)]()
 [![Coverage: 100%](https://img.shields.io/badge/coverage-100%25-brightgreen)]()
 
-> Part of the [Qualixar](https://qualixar.com) research initiative by Varun Pratap Bhardwaj.
+> Part of the [Qualixar](https://qualixar.com) research initiative by [Varun Pratap Bhardwaj](https://varunpratap.com).
 >
 > **SLM** stands for [SuperLocalMemory](https://superlocalmemory.com) — the local-first AI memory system. SLM Mesh is the communication layer that wires AI agent sessions together.
 
